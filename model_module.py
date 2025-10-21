@@ -1,12 +1,15 @@
 from transformers import AutoModelForSeq2SeqLM, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model
+import torch
 
 def load_model(model_name="./models/t5-small"):
+    print(f"Loading local model from {model_name} ...")
+
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype="float16",
+        bnb_4bit_compute_dtype=torch.float16,
     )
 
     model = AutoModelForSeq2SeqLM.from_pretrained(
@@ -25,5 +28,6 @@ def load_model(model_name="./models/t5-small"):
     )
 
     model = get_peft_model(model, lora_config)
-
+    torch.cuda.empty_cache()
+    print("Model loaded with 4-bit quantization + LoRA")
     return model

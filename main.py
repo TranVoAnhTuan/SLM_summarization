@@ -12,11 +12,11 @@ if __name__ == "__main__":
     print("Tokenizing dataset...")
     tokenized, tokenizer = tokenize_datasets(processed)
 
-    print(" Loading model (T5-small + LoRA)...")
+    print("⚙️ Loading model (local T5-small + LoRA)...")
     model = load_model()
 
     try:
-        print("Training...")
+        print("Starting training...")
         model = train_model(model, tokenized, tokenizer)
     except RuntimeError as e:
         print("GPU crashed, saving log...")
@@ -24,8 +24,7 @@ if __name__ == "__main__":
             f.write(str(e) + "\n")
 
     print("Evaluating model...")
-    results = evaluate_model(model, tokenizer, processed["validation"])
-    print("ROUGE results:", results)
+    evaluate_model(model, tokenizer, processed)  # ✅ dùng processed, không dùng tokenized
 
     print("Example inference:")
     text = """The President of the United States announced new climate policies aiming to reduce emissions by 40%."""

@@ -4,7 +4,7 @@ import os
 def tokenize_datasets(
     processed,
     model_name="./models/t5-small",
-    max_input=1000,
+    max_input=800,
     max_target=256,
     num_proc=4,
     save_dir="./tokenized_cnn_dm"
@@ -18,7 +18,7 @@ def tokenize_datasets(
     - num_proc: số tiến trình chạy song song
     - save_dir: nơi lưu dataset đã tokenized
     """
-    print(f"🔹 Loading tokenizer from {model_name} ...")
+    print(f"Loading tokenizer from {model_name} ...")
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
 
     def tokenize_fn(batch):
@@ -31,12 +31,12 @@ def tokenize_datasets(
         )
 
         # tokenize labels (summary)
-        with tokenizer.as_target_tokenizer():
-            labels = tokenizer(
-                batch["summary"],
-                truncation=True,
-                padding="max_length",
-                max_length=max_target,
+        # with tokenizer.as_target_tokenizer():
+        labels = tokenizer(
+            batch["summary"],
+            truncation=True,
+            padding="max_length",
+            max_length=max_target,
             )
         model_inputs["labels"] = labels["input_ids"]
 
@@ -50,7 +50,6 @@ def tokenize_datasets(
         remove_columns=processed["train"].column_names,
     )
 
-    # 🔹 Lưu để tái sử dụng (đỡ tốn thời gian chạy lại)
     os.makedirs(save_dir, exist_ok=True)
     tokenized.save_to_disk(save_dir)
     print(f"Tokenized dataset saved to {save_dir}")
