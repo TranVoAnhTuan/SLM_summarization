@@ -50,26 +50,23 @@ def evaluate_model(model, tokenizer, dataset, num_samples=50, save_dir="./evalua
     meteor = evaluate.load("meteor")
     bertscore = evaluate.load("bertscore")
 
-    # trong hàm evaluate_model
     rouge_scores = rouge.compute(predictions=preds, references=refs)
 
     metrics = {
         "ROUGE-1": rouge_scores["rouge1"],
         "ROUGE-2": rouge_scores["rouge2"],
         "ROUGE-L": rouge_scores["rougeL"],
-        "BLEU": bleu.compute(predictions=preds, references=[[r] for r in refs])["score"],
+        "BLEU": bleu.compute(predictions=preds, references=[[r] for r in refs])["score"]/100.0,
         "METEOR": meteor.compute(predictions=preds, references=refs)["meteor"],
     }
 
     bert = bertscore.compute(predictions=preds, references=refs, lang="en")
     metrics["BERTScore (F1)"] = sum(bert["f1"]) / len(bert["f1"])
 
-    # --- In kết quả ---
     print("\n Evaluation Results:")
     for k, v in metrics.items():
         print(f"{k:<15}: {v:.4f}")
 
-    # --- Lưu kết quả ---
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     json_path = os.path.join(save_dir, f"eval_{timestamp}.json")
     csv_path = os.path.join(save_dir, "eval_metrics.csv")
