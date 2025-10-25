@@ -1,5 +1,6 @@
 from transformers import AutoTokenizer
 import os
+from datasets import load_from_disk
 
 def tokenize_datasets(
     processed,
@@ -9,20 +10,28 @@ def tokenize_datasets(
     num_proc=4,
     save_dir="./tokenized_cnn_dm"
 ):
-    """
-    Tokenize dataset for T5 summarization task.
-    - processed: DatasetDict (đã có 'prompt' và 'summary')
-    - model_name: local path hoặc HuggingFace model ID
-    - max_input: giới hạn độ dài input tokens
-    - max_target: giới hạn độ dài summary tokens
-    - num_proc: số tiến trình chạy song song
-    - save_dir: nơi lưu dataset đã tokenized
-    """
+    if os.path.exists(save_dir):
+        print(f"Found cached tokenized data at {save_dir}")
+        print(f"Loading from disk...")
+    
+    try:
+        tokenized = load_from_disk(save_dir)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
+        
+        print(f"Loaded tokenized dataset from cache")
+        print(f"   Train: {len(tokenized['train']):,} samples")
+        print(f"   Validation: {len(tokenized['validation']):,} samples")
+        
+        return tokenized, tokenizer
+        
+    except Exception as e:
+        print(f"  Failed to load cache: {e}")
+        print(f"   Re-tokenizing from scratch...")
+
     print(f"Loading tokenizer from {model_name} ...")
     tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
 
     def tokenize_fn(batch):
-        # tokenize input (article/prompt)
         model_inputs = tokenizer(
             batch["prompt"],
             truncation=True,
@@ -30,8 +39,6 @@ def tokenize_datasets(
             max_length=max_input,
         )
 
-        # tokenize labels (summary)
-        # with tokenizer.as_target_tokenizer():
         labels = tokenizer(
             batch["summary"],
             truncation=True,
@@ -46,7 +53,7 @@ def tokenize_datasets(
     tokenized = processed.map(
         tokenize_fn,
         batched=True,
-        num_proc=num_proc,  # 🔹 chạy song song
+        num_proc=num_proc, 
         remove_columns=processed["train"].column_names,
     )
 

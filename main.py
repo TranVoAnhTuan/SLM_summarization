@@ -12,7 +12,7 @@ if __name__ == "__main__":
     print("Tokenizing dataset...")
     tokenized, tokenizer = tokenize_datasets(processed)
 
-    print("⚙️ Loading model (local T5-small + LoRA)...")
+    print("Loading model (local T5-small + LoRA)...")
     model = load_model()
 
     try:
@@ -24,9 +24,9 @@ if __name__ == "__main__":
             f.write(str(e) + "\n")
 
     print("Evaluating model...")
-    evaluate_model(model, tokenizer, processed)  # ✅ dùng processed, không dùng tokenized
+    evaluate_model(model, tokenizer, processed)  
 
     print("Example inference:")
-    text = """The President of the United States announced new climate policies aiming to reduce emissions by 40%."""
+    text = """Nigeria's television survival show has been suspended after a contestant drowned in preparation for the program, said Dutch brewer Heineken's local unit which is sponsoring the show. Anthony Ogadje, 25, and nine other contestants had gone to Shere Hills Lake in Nigeria's hilly Plateau State to prepare for the "Gulder Ultimate Search," which sets a variety of physical challenges for participants. A statement from Nigerian Breweries on Monday said Ogadje died suddenly and he was thought to have drowned. "All attempts to revive him by the attendant medical team and the lifeguards, including his fellow contestants, failed," said Nigerian Breweries, which is majority-owned by the Dutch giant. Broadcasting had been due to start on Thursday. In the show, the weakest contestants are evicted one by one until a winner emerges. The prize money is a big attraction in a country where most people live in extreme poverty and benefit little from Nigeria's oil wealth. The winner was to get 5 million naira (about $39,000) in cash, a four-wheel drive jeep and another 500,000 naira (about $3,900) to buy clothes. The winner could also have expected to become an instant celebrity, attracting sponsorship deals. The Ultimate Search, which started in 2004, gets high ratings. E-mail to a friend . Copyright 2007 Reuters. All rights reserved.This material may not be published, broadcast, rewritten, or redistributed."""
     summary = summarize_text(model, tokenizer, text)
     print(summary)

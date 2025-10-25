@@ -35,14 +35,14 @@ def train_model(model, tokenized, tokenizer, output_dir="./t5small_lora"):
     )
 
     train_data = tokenized["train"]
-    chunk_size = 10000  #  nhỏ cho GPU 4GB
-    # num_chunks = len(train_data) // chunk_size + (1 if len(train_data) % chunk_size else 0)
-    num_chunks = 14
+    chunk_size = 10000  
+    num_chunks = len(train_data) // chunk_size + (1 if len(train_data) % chunk_size else 0)
+    # num_chunks = 14
 
     print(f"Total train samples: {len(train_data)}")
     print(f"Training in {num_chunks} chunks of {chunk_size} samples each")
 
-    for i in range(13,num_chunks):
+    for i in range(num_chunks):
         start = i * chunk_size
         end = min((i + 1) * chunk_size, len(train_data))
         subset = train_data.select(range(start, end))
@@ -60,7 +60,6 @@ def train_model(model, tokenized, tokenizer, output_dir="./t5small_lora"):
 
         elapsed = round(time.time() - start_time, 2)
 
-        # Save full checkpoint (model + optimizer + state)
         save_path = f"{output_dir}/chunk_{i+1}"
         os.makedirs(save_path, exist_ok=True)
         trainer.save_model(save_path)
@@ -69,7 +68,6 @@ def train_model(model, tokenized, tokenizer, output_dir="./t5small_lora"):
         torch.cuda.empty_cache()
         gc.collect()
 
-        # Log training metrics
         metrics = result.metrics
         metrics.update({
             "chunk": i + 1,
