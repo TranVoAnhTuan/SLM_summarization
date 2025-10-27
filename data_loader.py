@@ -1,11 +1,18 @@
 from datasets import load_dataset
+from config import Config
 
-def load_and_preprocess():
-    dataset = load_dataset("cnn_dailymail", "3.0.0")
+class DataLoader:
+    def __init__(self, cfg: Config):
+        self.cfg = cfg
 
-    def preprocess(example):
-        prompt = "Summarize the following text in less than four sentences:\n\n" + example["article"]
-        return {"prompt": prompt, "summary": example["highlights"]}
+    def load_and_preprocess(self):
+        print(f"Loading dataset {self.cfg.dataset_name} ...")
+        dataset = load_dataset(self.cfg.dataset_name, self.cfg.dataset_version)
 
-    processed = dataset.map(preprocess, remove_columns=dataset["train"].column_names)
-    return processed
+        def preprocess(example):
+            prompt = "Summarize the following text in less than four sentences:\n\n" + example["article"]
+            return {"prompt": prompt, "summary": example["highlights"]}
+
+        processed = dataset.map(preprocess, remove_columns=dataset["train"].column_names)
+        print("Dataset loaded and preprocessed.")
+        return processed
