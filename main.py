@@ -5,6 +5,7 @@ from model_module import ModelLoader
 from trainer_module import TrainerModule
 from evaluate_module import Evaluator
 from inference_module import InferenceModule
+from translate_module import TranslateModule
 
 def main():
     cfg = Config()
@@ -28,6 +29,13 @@ def main():
     test_text = "Summarize the following text in less than four sentences: Nigeria's television survival show has been suspended ..."
     summary = infer.summarize(model, tokenizer, test_text)
     print("\nGenerated Summary:\n", summary)
+
+    translate = TranslateModule()
+    text_vi = "Bộ Y tế vừa công bố kế hoạch phòng chống dịch bệnh mùa đông."
+    text_en = translate.vi_to_en(text_vi)
+    summary = infer.summarize(model, tokenizer, text_en)
+    text_en = translate.en_to_vi(summary)
+    print("\nTóm tắt tiếng Việt:\n",text_en)
 
 if __name__ == "__main__":
     main()
