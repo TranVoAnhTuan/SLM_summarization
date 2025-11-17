@@ -22,6 +22,6 @@ class Config:
     chunk_size = 10000
 
     # Evaluation
-    num_eval_samples = 50
+    num_eval_samples = None
     dataset_val = "test"
     eval_logs = "./evaluation_logs"
