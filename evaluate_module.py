@@ -7,6 +7,7 @@ from tqdm import tqdm
 import evaluate
 from config import Config
 
+
 class Evaluator:
     def __init__(self, cfg: Config):
         self.cfg = cfg
@@ -22,40 +23,100 @@ class Evaluator:
                 max_length=self.cfg.max_input,
                 return_tensors="pt"
             ).to(model.device)
-            outputs = model.generate(**inputs, max_new_tokens=self.cfg.max_target, num_beams=4)
+
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=self.cfg.max_target,
+                num_beams=4
+            )
+
         return tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
 
-    def evaluate(self, model, tokenizer, dataset):
-        num_samples = self.cfg.num_eval_samples
-        sample_dataset = dataset["validation"].select(range(num_samples))
+    def evaluate(self, model, tokenizer, dataset, cache_path=None, reuse_cache=False):
+        dataset_val = self.cfg.dataset_val
+        sample_dataset = dataset[dataset_val]
 
-        print(f"Evaluating model on {num_samples} samples...")
+        total = len(sample_dataset)
 
-        preds, refs = [], []
-        for sample in tqdm(sample_dataset, total=num_samples):
-            pred = self._generate_summary(sample, model, tokenizer)
-            preds.append(pred)
-            refs.append(sample["summary"])
+        # ============================
+        #  LOAD FROM CACHE IF POSSIBLE
+        # ============================
+        if cache_path is not None and reuse_cache and os.path.exists(cache_path):
+            print(f"[CACHE] Loading cached predictions from: {cache_path}")
+
+            preds, refs = [], []
+            with open(cache_path, "r") as f:
+                for line in f:
+                    obj = json.loads(line)
+                    preds.append(obj["prediction"])
+                    refs.append(obj["reference"])
+
+            print(f"[CACHE] Loaded {len(preds)} cached predictions.")
+        else:
+            # ============================
+            #  GENERATE AND SAVE CACHE
+            # ============================
+            print(f"Generating predictions for {total} samples...")
+            preds, refs = [], []
+
+            if cache_path is not None:
+                print(f"[CACHE] Saving predictions to: {cache_path}")
+                f_cache = open(cache_path, "w")
+            else:
+                f_cache = None
+
+            for sample in tqdm(sample_dataset, total=total):
+                pred = self._generate_summary(sample, model, tokenizer)
+                preds.append(pred)
+                refs.append(sample["summary"])
+
+                if f_cache:
+                    f_cache.write(json.dumps({
+                        "prediction": pred,
+                        "reference": sample["summary"]
+                    }) + "\n")
+
+            if f_cache:
+                f_cache.close()
+                print(f"[CACHE] Saved predictions to cache.")
+
+        # ============================
+        #  COMPUTE METRICS
+        # ============================
 
         rouge = evaluate.load("rouge")
         bleu = evaluate.load("sacrebleu")
         meteor = evaluate.load("meteor")
-        bertscore = evaluate.load("bertscore")
 
         rouge_scores = rouge.compute(predictions=preds, references=refs)
         metrics = {
             "ROUGE-1": rouge_scores["rouge1"],
             "ROUGE-2": rouge_scores["rouge2"],
             "ROUGE-L": rouge_scores["rougeL"],
-            "BLEU": bleu.compute(predictions=preds, references=[[r] for r in refs])["score"]/100.0,
+            "BLEU": bleu.compute(
+                predictions=preds,
+                references=[[r] for r in refs]
+            )["score"] / 100.0,
             "METEOR": meteor.compute(predictions=preds, references=refs)["meteor"],
         }
-        bert = bertscore.compute(predictions=preds, references=refs, lang="en")
+
+        # ============================
+        #  BERTScore ON CPU (VRAM fix)
+        # ============================
+        print("Computing BERTScore (CPU mode)...")
+        bertscore = evaluate.load("bertscore")
+        bert = bertscore.compute(
+            predictions=preds,
+            references=refs,
+            lang="en",
+            device="cpu",
+            batch_size=16
+        )
         metrics["BERTScore (F1)"] = sum(bert["f1"]) / len(bert["f1"])
 
-        print("\nEvaluation Results:")
-        for k, v in metrics.items():
-            print(f"{k:<15}: {v:.4f}")
+        # ============================
+        #  SAVE METRICS
+        # ============================
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         json_path = os.path.join(self.save_dir, f"eval_{timestamp}.json")
@@ -73,4 +134,5 @@ class Evaluator:
 
         print(f"\nMetrics saved to {json_path}")
         print(f"Appended metrics to {csv_path}")
+
         return metrics
