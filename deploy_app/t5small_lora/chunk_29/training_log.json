@@ -1,0 +1,14 @@
+{
+    "train_runtime": 1016.6352,
+    "train_samples_per_second": 13.993,
+    "train_steps_per_second": 1.751,
+    "total_flos": 3082233839616000.0,
+    "train_loss": 0.6467668511894312,
+    "epoch": 2.0,
+    "chunk": 29,
+    "samples": "280000-287113",
+    "time_sec": 1016.88,
+    "train_batch_size": 2,
+    "grad_accum": 4,
+    "learning_rate": 0.0003
+}

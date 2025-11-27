@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <title>Tóm tắt văn bản</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h2>🧠 Tóm tắt văn bản bằng mô hình T5-small + QLoRA</h2>
+
+        <form id="summaryForm" method="POST">
+            {% csrf_token %}
+            <label for="text">Nhập văn bản:</label><br>
+            <textarea id="text" name="text" rows="8" placeholder="Nhập văn bản cần tóm tắt..."></textarea>
+
+            <div class="lang-select">
+                <label><input type="radio" name="lang" value="vi" checked> Tiếng Việt</label>
+                <label><input type="radio" name="lang" value="en"> Tiếng Anh</label>
+            </div>
+
+            <button type="submit">Tóm tắt</button>
+        </form>
+
+        <div id="loading" style="display:none;">⏳ Đang xử lý...</div>
+
+        <h3>Kết quả tóm tắt:</h3>
+        <div id="result" class="result-box"></div>
+    </div>
+    <script>
+        const form = document.getElementById("summaryForm");
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault(); // Ngăn form reload trang
+
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("result").innerHTML = "";
+
+            const text = document.getElementById("text").value;
+            const lang = document.querySelector('input[name="lang"]:checked').value;
+
+            // Gửi yêu cầu tới API Django
+            const response = await fetch("/api/summarize/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ text, lang })
+            });
+
+            const data = await response.json();
+            document.getElementById("loading").style.display = "none";
+
+            if (data.summary) {
+                document.getElementById("result").innerHTML = data.summary;
+            } else {
+                document.getElementById("result").innerHTML = "❌ Lỗi: " + (data.error || "Không có phản hồi từ máy chủ.");
+            }
+        });
+    </script>
+
+</body>
+</html>

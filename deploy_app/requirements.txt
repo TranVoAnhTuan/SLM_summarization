@@ -1,0 +1,8 @@
+django
+transformers
+torch
+peft
+# bitsandbytes
+sentencepiece
+accelerate
+sacremoses
